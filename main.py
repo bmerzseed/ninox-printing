@@ -1,5 +1,12 @@
 import os
 import fitz
+import json
+import PyPDF2
+from time import sleep
+import logging
+
+basePath = '/Users/Manda/Seed Co-op Dropbox/IT/Ninox Printing Test'
+scriptDirPath = os.path.abspath(os.path.dirname(__file__))
 
 class File():
     
@@ -11,18 +18,25 @@ class File():
         self.batchSize = None
 
     def __repr__(self):
-        return f'{self.fileName} -> batchNum: {self.batchNum}, batchSize: {self.batchSize}, barcode: {self.barcode}'
+        return f'{self.fileName} -> batchNum: {self.batchNum}, batchSize: {self.batchSize}'
 
     def extractFileInfo(self):
         fileInfoArr = self.fileName.split('.')[0].split('-')
-        self.batchNum = fileInfoArr[0]
-        self.batchSize = fileInfoArr[1]
+        try:
+            self.batchNum = fileInfoArr[0]
+            self.batchSize = int(fileInfoArr[1])
+            return True
+        except:
+            return False
 
     def checkForBarcode(self, barcodeDirPath):
         barcodeFile = f'{self.batchNum}.png'
         barcodeFiles = os.listdir(barcodeDirPath)
         if barcodeFile in barcodeFiles:
             self.barcode = barcodeFile
+            return True
+        else:
+            return False
 
     def addBarcodeAndMove(self, inDirPath, outDirPath, barcodeDirPath, barcodeInfo):
         if self.barcode != None:
@@ -33,7 +47,6 @@ class File():
             y0 = barcodeInfo['Y']
             x1 = barcodeInfo['X'] + barcodeInfo['W']
             y1 = barcodeInfo['Y'] + barcodeInfo['H']
-            print(self, f'{x0=}, {y0=}, {x1=}, {y1=}')
             barcodeRect = fitz.Rect(x0, y0, x1, y1)
 
             with fitz.open(inFilePath) as f:
@@ -41,15 +54,27 @@ class File():
                 pageOne.insertImage(barcodeRect, filename = barcodeFilePath)
                 f.save(outFilePath)
 
-            # then remove in pdf/ in barcode files
+            os.remove(inFilePath)
+            os.remove(barcodeFilePath)
 
-    def dupePdfPages(self):
-        pass
+    def dupePdfPages(self, inDirPath, outDirPath):
+        inPdfPath = f'{inDirPath}/{self.fileName}'
+        outPdfPath = f'{outDirPath}/{self.fileName}'
+
+        with open(inPdfPath, 'rb') as inPdf, open(outPdfPath, 'wb') as outPdf:
+            pdfReader = PyPDF2.PdfFileReader(inPdf)
+            pdfWriter = PyPDF2.PdfFileWriter()
+
+            for i in range(self.batchSize):
+                pdfWriter.addPage(pdfReader.getPage(0))
+
+            pdfWriter.write(outPdf)
+
+        os.remove(inPdfPath)
+
+        print(f'completed -> {self}')
 
 class Dir():
-
-    basePath = '/Users/Manda/Seed Co-op Dropbox/IT/Ninox Printing Test'
-    scriptDirPath = os.path.abspath(os.path.dirname(__file__))
 
     ignoreFiles = ['.DS_Store']
     
@@ -59,10 +84,10 @@ class Dir():
         self.printDirName = printDirName
         self.barcodeInfo = barcodeInfo
 
-        self.inDirPath = f'{self.basePath}/{inDirName}'
-        self.dupeDirPath = f'{self.basePath}/{dupeDirName}'
-        self.printDirPath = f'{self.basePath}/{printDirName}'
-        self.barcodeDirPath = f'{self.basePath}/barcode'
+        self.inDirPath = f'{basePath}/{inDirName}'
+        self.dupeDirPath = f'{basePath}/{dupeDirName}'
+        self.printDirPath = f'{basePath}/{printDirName}'
+        self.barcodeDirPath = f'{basePath}/barcode'
         
         self.dirFiles = []
 
@@ -74,6 +99,7 @@ class Dir():
         self.extractDirFilesInfo()
         self.checkDirFilesBarcodes()
         self.addBarcodesAndMove()
+        self.dupePdfPages()
 
     def getDirFiles(self):
         dirFiles = os.listdir(self.inDirPath)
@@ -84,24 +110,39 @@ class Dir():
                     fileObj = File(file)
                     self.dirFiles.append(fileObj)
             except Exception as e:
+                print(file)
                 logException(e)
-                continue
 
     def extractDirFilesInfo(self):
-        for file in self.dirFiles:
-            try:
-                file.extractFileInfo()
-            except Exception as e:
-                logException(e):
-                    continue
 
-    def checkDirFilesBarcodes(self):
+        toRemove = []
+
         for file in self.dirFiles:
             try:
-                file.checkForBarcode(self.barcodeDirPath)
+                canExtractFileInfo = file.extractFileInfo()
+                if not canExtractFileInfo:
+                    toRemove.append(file)
             except Exception as e:
                 logException(e)
-                continue
+
+        for file in toRemove:
+            self.dirFiles.remove(file)
+
+    def checkDirFilesBarcodes(self):
+
+        toRemove = []
+
+        for file in self.dirFiles:
+            try:
+                isBarcode = file.checkForBarcode(self.barcodeDirPath)
+                if not isBarcode:
+                    toRemove.append(file)
+
+            except Exception as e:
+                logException(e)
+
+        for file in toRemove:
+            self.dirFiles.remove(file)
 
     def addBarcodesAndMove(self):
         for file in self.dirFiles:
@@ -109,54 +150,45 @@ class Dir():
                 file.addBarcodeAndMove(self.inDirPath, self.dupeDirPath, self.barcodeDirPath, self.barcodeInfo)
             except Exception as e:
                 logException(e)
-                continue
 
     def dupePdfPages(self):
         for file in self.dirFiles:
             try:
-                file.dupePdfPages()
+                file.dupePdfPages(self.dupeDirPath, self.printDirPath)
             except Exception as e:
                 logException(e)
-                continue
 
 def logException(e):
-    print(e)
+    print(f'exception -> {e}')
+
+    logFileName = 'logger.log'
+    logFilePath = f'{scriptDirPath}/{logFileName}'
+
+    logging.basicConfig(filename=logFilePath, encoding = 'utf-8', level = logging.DEBUG)
+    logging.error(e, exc_info=1)
 
 def main():
 
-    prodTypes = {
-        'sm': {
-            'inDir': 'smIn',
-            'dupeDir': 'smToDupe',
-            'printDir': 'smToPrint',
-            'barcodeInfo' : {
-                'H': 20,
-                'W': 40,
-                'X': 10,
-                'Y': 25,
-            },
-        },
-        'bk': {
-            'inDir': 'bkIn',
-            'dupeDir': 'bkToDupe',
-            'printDir': 'bkToPrint',
-            'barcodeInfo' : {
-                'H': 15,
-                'W': 30,
-                'X': 45,
-                'Y': 50,
-            },
-        }
-    }
+    with open(f'{scriptDirPath}/config.json', 'r') as f:
+        config = json.load(f)
 
-    for prodType in prodTypes:
-        inDir = prodTypes[prodType]['inDir']
-        dupeDir = prodTypes[prodType]['dupeDir']
-        printDir = prodTypes[prodType]['printDir']
-        barcodeInfo = prodTypes[prodType]['barcodeInfo']
+    prodConfig = config['prodConfig']
+
+    for prodType in prodConfig:
+        inDir = prodConfig[prodType]['inDir']
+        dupeDir = prodConfig[prodType]['dupeDir']
+        printDir = prodConfig[prodType]['printDir']
+        barcodeInfo = prodConfig[prodType]['barcodeInfo']
         curDir = Dir(inDir, dupeDir, printDir, barcodeInfo)
         curDir.processFiles()
-        print(curDir, curDir.dirFiles)
 
 if __name__ == '__main__':
-    main()
+
+    print('printing & barcoding script started')
+
+    while True:
+        try:
+            main()
+            sleep(1)
+        except Exception as e:
+            logException(e)

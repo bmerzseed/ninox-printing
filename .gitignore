@@ -1,3 +1,5 @@
 env/
 *.png
 *.pdf
+testDirs/
+.DS_Store

@@ -1,0 +1,26 @@
+{
+    "prodConfig" : {
+        "sm": {
+            "inDir": "smIn",
+            "dupeDir": "smToDupe",
+            "printDir": "smToPrint",
+            "barcodeInfo" : {
+                "H": 28,
+                "W": 106,
+                "X": 180,
+                "Y": 18
+            }
+        },
+        "bk": {
+            "inDir": "bkIn",
+            "dupeDir": "bkToDupe",
+            "printDir": "bkToPrint",
+            "barcodeInfo" : {
+                "H": 30,
+                "W": 108,
+                "X": 15,
+                "Y": 10
+            }
+        }
+    }
+}
