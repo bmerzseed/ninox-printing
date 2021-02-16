@@ -73,6 +73,7 @@ class File():
         os.remove(inPdfPath)
 
         print(f'completed -> {self}')
+        logging.info(f'completed -> {self}')
 
 class Dir():
 
@@ -158,13 +159,13 @@ class Dir():
             except Exception as e:
                 logException(e)
 
-def logException(e):
-    print(f'exception -> {e}')
-
+def configureLogging():
     logFileName = 'logger.log'
     logFilePath = f'{scriptDirPath}/{logFileName}'
-
     logging.basicConfig(filename=logFilePath, encoding = 'utf-8', level = logging.DEBUG)
+
+def logException(e):
+    print(e)
     logging.error(e, exc_info=1)
 
 def main():
@@ -185,6 +186,8 @@ def main():
 if __name__ == '__main__':
 
     print('printing & barcoding script started')
+
+    configureLogging()
 
     while True:
         try:
