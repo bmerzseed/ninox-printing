@@ -5,8 +5,8 @@ import PyPDF2
 from time import sleep
 import logging
 
-basePath = '/Users/Manda/Seed Co-op Dropbox/IT/Ninox Printing Test'
-scriptDirPath = os.path.abspath(os.path.dirname(__file__))
+# basePath = '/Users/Manda/Seed Co-op Dropbox/IT/Ninox Printing Test'
+# scriptDirPath = os.path.abspath(os.path.dirname(__file__))
 
 class File():
     
@@ -76,10 +76,8 @@ class File():
         logging.info(f'completed -> {self}')
 
 class Dir():
-
-    ignoreFiles = ['.DS_Store']
     
-    def __init__(self, inDirName, dupeDirName, printDirName, barcodeInfo):
+    def __init__(self, inDirName, dupeDirName, printDirName, barcodeInfo, ignoreFiles):
         self.inDirName = inDirName
         self.dupeDirName = dupeDirName
         self.printDirName = printDirName
@@ -89,6 +87,8 @@ class Dir():
         self.dupeDirPath = f'{basePath}/{dupeDirName}'
         self.printDirPath = f'{basePath}/{printDirName}'
         self.barcodeDirPath = f'{basePath}/barcode'
+
+        self.ignoreFiles = ignoreFiles
         
         self.dirFiles = []
 
@@ -170,22 +170,26 @@ def logException(e):
 
 def main():
 
-    with open(f'{scriptDirPath}/config.json', 'r') as f:
-        config = json.load(f)
-
-    prodConfig = config['prodConfig']
-
     for prodType in prodConfig:
         inDir = prodConfig[prodType]['inDir']
         dupeDir = prodConfig[prodType]['dupeDir']
         printDir = prodConfig[prodType]['printDir']
         barcodeInfo = prodConfig[prodType]['barcodeInfo']
-        curDir = Dir(inDir, dupeDir, printDir, barcodeInfo)
+        curDir = Dir(inDir, dupeDir, printDir, barcodeInfo, ignoreFiles)
         curDir.processFiles()
 
 if __name__ == '__main__':
 
     print('printing & barcoding script started')
+
+    scriptDirPath = os.path.abspath(os.path.dirname(__file__))
+
+    with open(f'{scriptDirPath}/config.json', 'r') as f:
+        config = json.load(f)
+
+    prodConfig = config['prodConfig']
+    ignoreFiles = config['ignoreFiles']
+    basePath = config['basePath']
 
     configureLogging()
 

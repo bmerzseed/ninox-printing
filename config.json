@@ -22,5 +22,9 @@
                 "Y": 10
             }
         }
-    }
+    }, 
+    "ignoreFiles": [
+        ".DS_Store"
+    ],
+    "basePath": "/Users/Manda/Seed Co-op Dropbox/IT/Ninox Printing Test"
 }
