@@ -5,9 +5,6 @@ import PyPDF2
 from time import sleep
 import logging
 
-# basePath = '/Users/Manda/Seed Co-op Dropbox/IT/Ninox Printing Test'
-# scriptDirPath = os.path.abspath(os.path.dirname(__file__))
-
 class File():
     
     def __init__(self, fileName):
@@ -111,7 +108,6 @@ class Dir():
                     fileObj = File(file)
                     self.dirFiles.append(fileObj)
             except Exception as e:
-                print(file)
                 logException(e)
 
     def extractDirFilesInfo(self):
@@ -162,7 +158,7 @@ class Dir():
 def configureLogging():
     logFileName = 'logger.log'
     logFilePath = f'{scriptDirPath}/{logFileName}'
-    logging.basicConfig(filename=logFilePath, encoding = 'utf-8', level = logging.DEBUG)
+    logging.basicConfig(filename=logFilePath, level = logging.DEBUG)
 
 def logException(e):
     print(e)
